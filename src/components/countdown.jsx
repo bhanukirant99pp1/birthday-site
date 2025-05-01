@@ -22,9 +22,10 @@ function calculateTimeLeft(targetDate) {
 
 export default function Countdown({ targetDate, onCountdownEnd }) {
 	const [timeLeft, setTimeLeft] = useState(calculateTimeLeft(targetDate));
-	const [mainCountdownEnded, setMainCountdownEnded] = useState(false);
 	const [isFinalCountdown, setIsFinalCountdown] = useState(false);
 	const [finalCount, setFinalCount] = useState(10);
+	const [showIntermediateMessage, setShowIntermediateMessage] = useState(false);
+	const [intermediateTimer, setIntermediateTimer] = useState(5);
 
 	useEffect(() => {
 		const timer = setTimeout(() => {
@@ -34,18 +35,18 @@ export default function Countdown({ targetDate, onCountdownEnd }) {
 				} else {
 					onCountdownEnd();
 				}
-			} else if (mainCountdownEnded) {
-				// Do nothing, waiting for the 5-second pause
+			} else if (showIntermediateMessage) {
+				if (intermediateTimer > 0) {
+					setIntermediateTimer(intermediateTimer - 1);
+				} else {
+					setIsFinalCountdown(true);
+				}
 			} else {
 				const updated = calculateTimeLeft(targetDate);
 				setTimeLeft(updated);
 
 				if (!updated || Object.keys(updated).length <= 0) {
-					setMainCountdownEnded(true);
-					// Start the final countdown after 5 seconds
-					setTimeout(() => {
-						setIsFinalCountdown(true);
-					}, 5000);
+					setShowIntermediateMessage(true);
 				}
 			}
 		}, 1000);
@@ -56,8 +57,9 @@ export default function Countdown({ targetDate, onCountdownEnd }) {
 		targetDate,
 		isFinalCountdown,
 		finalCount,
-		mainCountdownEnded,
 		onCountdownEnd,
+		showIntermediateMessage,
+		intermediateTimer,
 	]);
 
 	const icons = [
@@ -84,7 +86,9 @@ export default function Countdown({ targetDate, onCountdownEnd }) {
 			</motion.h1>
 
 			<div className="flex flex-wrap justify-center gap-4 mb-8">
-				{!mainCountdownEnded && Object.keys(timeLeft).length > 0 ? (
+				{!showIntermediateMessage &&
+				!isFinalCountdown &&
+				Object.keys(timeLeft).length > 0 ? (
 					Object.entries(timeLeft).map(([unit, value], index) => (
 						<motion.div
 							key={unit}
@@ -113,7 +117,32 @@ export default function Countdown({ targetDate, onCountdownEnd }) {
 						<div className="mt-2">{icons[finalCount % icons.length]}</div>
 					</motion.div>
 				) : (
-					<p className="text-2xl text-pink-600 font-bold">It's time!</p>
+					<motion.div
+						className="bg-white rounded-3xl shadow-lg p-5 flex flex-col items-center justify-center border-2 border-pink-200"
+						initial={{ opacity: 0 }}
+						animate={{ opacity: 1 }}
+						transition={{ duration: 0.5 }}
+					>
+						<p className="text-xl text-pink-600 font-bold">It's time!</p>
+						<div className="mt-2 flex gap-2">
+							{icons.map((icon, i) => (
+								<motion.div
+									key={i}
+									animate={{
+										rotate: [0, 10, -10, 0],
+										scale: [1, 1.2, 1],
+									}}
+									transition={{
+										duration: 1.5,
+										repeat: Infinity,
+										delay: i * 0.2,
+									}}
+								>
+									{icon}
+								</motion.div>
+							))}
+						</div>
+					</motion.div>
 				)}
 			</div>
 
@@ -123,11 +152,11 @@ export default function Countdown({ targetDate, onCountdownEnd }) {
 				animate={{ opacity: 1 }}
 				transition={{ delay: 0.5 }}
 			>
-				{!isFinalCountdown && (
-					<p className="text-lg text-purple-700 mb-4">
-						Just a little more... A small gift for my favorite person❤️
-					</p>
-				)}
+				<p className="text-lg text-purple-700 mb-4">
+					{isFinalCountdown
+						? 'Counting down to your surprise...'
+						: 'Just a little more... A small gift for my favorite person❤️'}
+				</p>
 
 				<div className="flex justify-center space-x-2">
 					{Array.from({ length: 3 }).map((_, i) => (
