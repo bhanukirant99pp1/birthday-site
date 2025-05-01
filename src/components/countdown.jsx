@@ -22,13 +22,19 @@ function calculateTimeLeft(targetDate) {
 
 export default function Countdown({ targetDate, onCountdownEnd }) {
 	const [timeLeft, setTimeLeft] = useState(calculateTimeLeft(targetDate));
+	const [isMainCountdownEnded, setIsMainCountdownEnded] = useState(false);
 	const [isFinalCountdown, setIsFinalCountdown] = useState(false);
+	const [waitingSeconds, setWaitingSeconds] = useState(30);
 	const [finalCount, setFinalCount] = useState(10);
 
 	useEffect(() => {
 		const timer = setTimeout(() => {
-			if (isFinalCountdown) {
-				if (finalCount > 0) {
+			if (isMainCountdownEnded) {
+				if (waitingSeconds > 0) {
+					setWaitingSeconds(waitingSeconds - 1);
+				} else if (!isFinalCountdown) {
+					setIsFinalCountdown(true);
+				} else if (finalCount > 0) {
 					setFinalCount(finalCount - 1);
 				} else {
 					onCountdownEnd();
@@ -38,13 +44,21 @@ export default function Countdown({ targetDate, onCountdownEnd }) {
 				setTimeLeft(updated);
 
 				if (!updated || Object.keys(updated).length <= 0) {
-					setIsFinalCountdown(true);
+					setIsMainCountdownEnded(true);
 				}
 			}
 		}, 1000);
 
 		return () => clearTimeout(timer);
-	}, [timeLeft, targetDate, isFinalCountdown, finalCount, onCountdownEnd]);
+	}, [
+		timeLeft,
+		targetDate,
+		isMainCountdownEnded,
+		waitingSeconds,
+		isFinalCountdown,
+		finalCount,
+		onCountdownEnd,
+	]);
 
 	const icons = [
 		<Heart key="heart" className="text-pink-500 fill-pink-200" />,
@@ -70,7 +84,7 @@ export default function Countdown({ targetDate, onCountdownEnd }) {
 			</motion.h1>
 
 			<div className="flex flex-wrap justify-center gap-4 mb-8">
-				{!isFinalCountdown && Object.keys(timeLeft).length > 0 ? (
+				{!isMainCountdownEnded && Object.keys(timeLeft).length > 0 ? (
 					Object.entries(timeLeft).map(([unit, value], index) => (
 						<motion.div
 							key={unit}
@@ -85,6 +99,14 @@ export default function Countdown({ targetDate, onCountdownEnd }) {
 							<div className="mt-1">{icons[index % icons.length]}</div>
 						</motion.div>
 					))
+				) : isMainCountdownEnded && !isFinalCountdown ? (
+					<motion.div
+						className="text-2xl text-pink-600 font-bold py-8"
+						animate={{ opacity: [0.7, 1, 0.7] }}
+						transition={{ duration: 2, repeat: Infinity }}
+					>
+						Preparing your surprise... {waitingSeconds}s
+					</motion.div>
 				) : isFinalCountdown ? (
 					<motion.div
 						className="bg-white rounded-3xl shadow-lg p-6 w-36 h-36 flex flex-col items-center justify-center border-2 border-pink-200"
